@@ -62,37 +62,39 @@ import java.util.logging.Logger;
  */
 public class IdleFilter extends PropertyListenerAdapter {
 
-  static Logger log = JPF.getLogger("gov.nasa.jpf.listener.IdleFilter");
+  public static Logger log = JPF.getLogger("gov.nasa.jpf.listener.IdleFilter");
 
-  static class ThreadStat {
-    String tname;
+  public  static class ThreadStat {
+    public String tname;
 
-    int backJumps;
+    public int backJumps;
 
-    boolean isCleared = false;
+    public boolean isCleared = false;
 
-    int loopStartPc;
+    public int loopStartPc;
 
-    int loopEndPc;
+    public int loopEndPc;
 
-    int loopStackDepth;
+    public int loopStackDepth;
 
-    ThreadStat(String tname) {
+    public ThreadStat(String tname) {
       this.tname = tname;
     }
   }
 
-  static enum Action { JUMP, PRUNE, BREAK, YIELD, WARN }
+  public static enum Action { JUMP, PRUNE, BREAK, YIELD, WARN }
 
-  DynamicObjectArray<ThreadStat> threadStats = new DynamicObjectArray<ThreadStat>(4,16);
+  public DynamicObjectArray<ThreadStat> threadStats = new DynamicObjectArray<ThreadStat>(4,16);
 
-  ThreadStat ts;
+  public ThreadStat ts;
 
   // we use this to remember that we just broke the transition
-  boolean brokeTransition;
+  public boolean brokeTransition;
 
-  int maxBackJumps;
-  Action action;
+  public int maxBackJumps;
+  public Action action;
+
+  public boolean jumpedLoop = false;
 
 
   // ----------------------------------------------------- SearchListener
@@ -117,7 +119,7 @@ public class IdleFilter extends PropertyListenerAdapter {
     }
 
   }
-  
+
   @Override
   public void stateAdvanced(Search search) {
     ts.backJumps = 0;
@@ -146,8 +148,8 @@ public class IdleFilter extends PropertyListenerAdapter {
       ts = new ThreadStat(ti.getName());
       threadStats.set(tid, ts);
     }
-
     if (executedInsn.isBackJump()) {
+      System.out.println("A loop " + ts.backJumps);
       ts.backJumps++;
 
       int loopStackDepth = ti.getStackDepth();
@@ -160,11 +162,11 @@ public class IdleFilter extends PropertyListenerAdapter {
         ts.loopStartPc = loopPc;
         ts.loopEndPc = executedInsn.getPosition();
         ts.backJumps = 0;
-        
+
       } else {
         if (!ts.isCleared) {
           if (ts.backJumps > maxBackJumps) {
-
+          System.out.println("I did that many jumps "+ts.backJumps);
             ti.reschedule("idleFilter"); // this breaks the executePorStep loop
             MethodInfo mi = executedInsn.getMethodInfo();
             ClassInfo ci = mi.getClassInfo();
@@ -177,7 +179,8 @@ public class IdleFilter extends PropertyListenerAdapter {
 
                 Instruction next = executedInsn.getNext();
                 ti.setNextPC(next);
-
+                System.out.println(executedInsn+"  "+next+"   "+next.getLineNumber());
+                jumpedLoop = true;
                 log.warning("jumped past loop in: " + ti.getName() +
                         "\n\tat " + ci.getName() + "." + mi.getName() + "(" + file + ":" + line + ")");
                 break;
@@ -193,7 +196,7 @@ public class IdleFilter extends PropertyListenerAdapter {
                 // just break the transition and let the state matching take over
                 brokeTransition = true;
                 ti.breakTransition("breakIdleLoop");
-
+                System.out.println(executedInsn+"  "+"   "+executedInsn.getLineNumber());
                 log.warning("breaks transition on suspicious loop in thread: " + ti.getName() +
                         "\n\tat " + ci.getName() + "." + mi.getName() + "(" + file + ":" + line + ")");
 
@@ -208,7 +211,7 @@ public class IdleFilter extends PropertyListenerAdapter {
                         "\n\tat " + ci.getName() + "." + mi.getName() + "(" + file + ":" + line + ")");
 
                 break;
-                
+
               case WARN:
                 log.warning("detected suspicious loop in thread: " + ti.getName() +
                         "\n\tat " + ci.getName() + "." + mi.getName() + "(" + file + ":" + line + ")");
@@ -223,7 +226,7 @@ public class IdleFilter extends PropertyListenerAdapter {
       // if we call methods or set array elements inside the loop in question,
       // we assume this is not an idle loop and terminate the checks
       // <2do> this is too restrictive - we should leave this to state matching
-      
+
       if ((executedInsn instanceof JVMInvokeInstruction)
           || (executedInsn instanceof ArrayStoreInstruction)) {
         int stackDepth = ti.getStackDepth();
@@ -237,7 +240,7 @@ public class IdleFilter extends PropertyListenerAdapter {
       }
     }
   }
-  
+
   // thread ids are reused, so we have to clean up
   @Override
   public void threadTerminated (VM vm, ThreadInfo ti){

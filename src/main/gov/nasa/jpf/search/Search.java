@@ -381,6 +381,10 @@ public abstract class Search {
     depthLimit = limit;
   }
 
+  public void setDepth(int depth) {
+    this.depth = depth;
+  }
+
   protected SearchState getSearchState () {
     return new SearchState(this);
   }

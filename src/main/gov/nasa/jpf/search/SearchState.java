@@ -30,4 +30,8 @@ public class SearchState {
   public int getSearchDepth () {
     return depth;
   }
+
+  public void setSearchDepth(int depth){
+    this.depth = depth;
+  }
 }
