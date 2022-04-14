@@ -191,6 +191,32 @@ task createRunTestJar(type: Jar) {
     }
 }
 
+task createJpfClassesSourcesJar(type: Jar) {
+    archiveName = "jpf-classes-sources.jar"
+    destinationDir = file("${buildDir}")
+
+    from sourceSets.classes.allSource
+    from sourceSets.annotations.allSource
+    from sourceSets.main.allSource
+}
+
+task createJpfSourcesJar(type: Jar) {
+    archiveName = "jpf-sources.jar"
+    destinationDir = file("${buildDir}")
+
+    from sourceSets.main.allSource
+    from sourceSets.peers.allSource
+    from sourceSets.annotations.allSource
+    from sourceSets.classes.allSource
+}
+
+task createJpfAnnotationsSourcesJar(type: Jar) {
+    archiveName = "jpf-annotations-sources.jar"
+    destinationDir = file("${buildDir}")
+
+    from sourceSets.annotations.allSource
+}
+
 task buildJars {
     group = "JPF Build"
     description = "Generates all core JPF jar files."
@@ -201,6 +227,10 @@ task buildJars {
     dependsOn createJpfJar
     dependsOn createRunJpfJar
     dependsOn createRunTestJar
+
+    dependsOn createJpfAnnotationsSourcesJar
+    dependsOn createJpfClassesSourcesJar
+    dependsOn createJpfSourcesJar
 }
 
 test {
