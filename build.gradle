@@ -29,7 +29,22 @@ task copyLibs(type: Copy) {
     into 'build'
 }
 
-apply plugin: "com.dmdirc.git-version"
+// Only apply git-version plugin if git history is actually available
+// (may not exist in archived releases, even if .git file exists)
+def gitAvailable = false
+try {
+    def proc = "git rev-parse HEAD".execute(null, projectDir)
+    proc.waitFor()
+    gitAvailable = (proc.exitValue() == 0)
+} catch (Exception e) {
+    gitAvailable = false
+}
+
+if (gitAvailable) {
+    apply plugin: "com.dmdirc.git-version"
+} else {
+    version = "unknown"
+}
 
 ext.manifestCommonAttrbutes = manifest {
     attributes(
