@@ -115,7 +115,13 @@ public class Reporter extends SearchListenerAdapter {
    * called after the JPF run is finished. Shouldn't be public, but is called by JPF
    */
   public void cleanUp(){
-    // nothing yet
+    // Release publisher resources (e.g. an open report.console.file) even when the run terminated
+    // abnormally before searchFinished() reached closeChannel() -- otherwise the report file stays
+    // open, which on Windows blocks deleting the directory it lives in. closeChannel/close is
+    // idempotent, so a normal run that already closed the channel is unaffected.
+    for (Publisher publisher : publishers) {
+      publisher.closeChannel();
+    }
   }
   
   public Statistics getRegisteredStatistics(){
